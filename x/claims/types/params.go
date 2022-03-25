@@ -23,6 +23,10 @@ var (
 	ParamStoreKeyClaimsDenom        = []byte("ClaimsDenom")
 )
 
+const (
+	ClaimsFileName = "claims.csv"
+)
+
 // ParamKeyTable returns the parameter key table.
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})

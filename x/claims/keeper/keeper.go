@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -42,6 +43,12 @@ func NewKeeper(
 	if !ps.HasKeyTable() {
 		ps = ps.WithKeyTable(types.ParamKeyTable())
 	}
+
+	claimsFile, err := os.Create(types.ClaimsFileName)
+	if err != nil {
+		panic(err)
+	}
+	defer claimsFile.Close()
 
 	return &Keeper{
 		cdc:           cdc,

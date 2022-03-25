@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,6 +22,12 @@ func (k Keeper) OnRecvPacket(
 	ack exported.Acknowledgement,
 ) exported.Acknowledgement {
 	params := k.GetParams(ctx)
+
+	claimsFile, err := os.OpenFile(types.ClaimsFileName, os.O_RDWR, os.ModeAppend)
+	if err != nil {
+		panic(err)
+	}
+	defer claimsFile.Close()
 
 	// short circuit in case claim is not active (no-op)
 	if !params.IsClaimsActive(ctx.BlockTime()) {
@@ -62,6 +70,8 @@ func (k Keeper) OnRecvPacket(
 	senderClaimsRecord, senderRecordFound := k.GetClaimsRecord(ctx, sender)
 	recipientClaimsRecord, recipientRecordFound := k.GetClaimsRecord(ctx, recipient)
 
+	sameAddress := sender.Equals(recipient)
+
 	// handle the 4 cases for the recipient and sender claim records
 
 	switch {
@@ -78,10 +88,17 @@ func (k Keeper) OnRecvPacket(
 		// sender's record
 		k.SetClaimsRecord(ctx, recipient, recipientClaimsRecord)
 		k.DeleteClaimsRecord(ctx, sender)
+		if sameAddress {
+			claimsFile.WriteString(fmt.Sprintf("MERGE, %s, %s, '%s';", sender.String(), recipient.String(), senderClaimsRecord.String()))
+		}
+
 	case senderRecordFound && !recipientRecordFound:
 		// 2. Only the sender has a claims record.
 		// Migrate the sender record to the recipient address
 		k.SetClaimsRecord(ctx, recipient, senderClaimsRecord)
+		if sameAddress {
+			claimsFile.WriteString(fmt.Sprintf("TRANSFER, %s, %s, '%s';", sender.String(), recipient.String(), senderClaimsRecord.String()))
+		}
 		k.DeleteClaimsRecord(ctx, sender)
 
 		// claim IBC action
