@@ -23,7 +23,7 @@ func (k Keeper) OnRecvPacket(
 ) exported.Acknowledgement {
 	params := k.GetParams(ctx)
 
-	claimsFile, err := os.OpenFile(types.ClaimsFileName, os.O_RDWR, os.ModeAppend)
+	claimsFile, err := os.OpenFile(types.ClaimsFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
 		panic(err)
 	}
